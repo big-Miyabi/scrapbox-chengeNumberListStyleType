@@ -1,8 +1,13 @@
+// 選択した文字列にマーカー
+scrapbox.PopupMenu.addButton({
+  title: "マーカー",
+  onClick: (text) => `[[${text}]]`,
+});
+
 const $appRoot = $("#app-container");
 
 const findNumberList = (val) => {
   const text = $(val).text();
-  console.log(text);
   // "1. hoge"
   // "10. foo"
   // "  1. bar"
@@ -31,19 +36,42 @@ const getTarget = (textVal) => {
   }
 };
 
+const addColor = (target) => {
+  $(target)
+    .children()
+    .each((i, targetSpan) => {
+      const text = $(targetSpan).text();
+      const isBlank = /^\s$/.test(text);
+
+      if (isBlank) return false;
+
+      const isNumberOrDot = /^(\d|\.)+$/.test(text);
+      if (isNumberOrDot) {
+        const span = document.createElement("span");
+        span.textContent = text;
+        span.setAttribute("style", "color: #619FE0");
+        targetSpan.textContent = null;
+        targetSpan.appendChild(span);
+      }
+    });
+};
+
 const customizeNumberList = () => {
   $('span[class="text"]').each((i, textVal) => {
-    const isNumber = findNumberList(textVal);
+    const isNumberList = findNumberList(textVal);
 
-    if (isNumber) {
-      console.log(isNumber);
-
+    if (isNumberList) {
       const target = getTarget(textVal);
       console.log(target);
+      addColor(target);
     }
   });
 };
 
 $appRoot.on("keyup", (e) => {
   customizeNumberList();
+});
+
+$(function () {
+  console.log("ロードしたよ！");
 });
