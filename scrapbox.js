@@ -12,25 +12,34 @@ const findNumberList = (val) => {
   return isNumber;
 };
 
+const getTarget = (textVal) => {
+  const $indentObj = $(textVal).find('span[class="indent"]');
+  const hasIndent = $indentObj.length;
+  let targetVal = undefined;
+
+  if (hasIndent) {
+    $indentObj.each((i, v) => {
+      targetVal = v;
+    });
+    return targetVal;
+  } else {
+    const $target = $(textVal).children("span");
+    $target.each((i, v) => {
+      targetVal = v;
+    });
+    return targetVal;
+  }
+};
+
 const customizeNumberList = () => {
-  $('span[class="text"]').each((i, val) => {
-    const isNumber = findNumberList(val);
+  $('span[class="text"]').each((i, textVal) => {
+    const isNumber = findNumberList(textVal);
 
     if (isNumber) {
       console.log(isNumber);
-      const indentObj = $(val).find('span[class="indent"]');
-      const hasIndent = indentObj.length;
 
-      if (hasIndent) {
-        indentObj.each((index, object) => {
-          console.log(object);
-        });
-      } else {
-        const target = $(val).children("span");
-        target.each((index, object) => {
-          console.log(object);
-        });
-      }
+      const target = getTarget(textVal);
+      console.log(target);
     }
   });
 };
