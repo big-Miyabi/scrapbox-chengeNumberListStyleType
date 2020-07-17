@@ -4,7 +4,7 @@ scrapbox.PopupMenu.addButton({
   onClick: (text) => `[[${text}]]`,
 });
 
-const convertToRoman = (num, isUpper) => {
+const convertToRoman = (num, shouldBeUpper) => {
   const decimal = [
     1000,
     900,
@@ -66,8 +66,7 @@ const convertToRoman = (num, isUpper) => {
     "ⅰ",
   ];
 
-  const romanNumeral = isUpper ? upperRomanNumeral : lowerRomanNumeral;
-
+  const romanNumeral = shouldBeUpper ? upperRomanNumeral : lowerRomanNumeral;
   let romanized = "";
 
   for (var i = 0; i < decimal.length; i++) {
@@ -84,7 +83,7 @@ const findNumberList = (val) => {
   // "1. hoge"
   // "10. foo"
   // "  1. bar"
-  // などを取得したい
+  // などを取得する
   const regexp = /^\s*\d+\.\s.*/g;
   const isNumber = regexp.test(text);
   return isNumber;
@@ -109,7 +108,52 @@ const getTarget = (textVal) => {
   }
 };
 
-const createSpan = (textContent, targetSpan) => {
+const getOrderListTypeIndex = (targetSpan) => {
+  const className = targetSpan.className;
+  const indentAmount = className.substr(2, 1);
+  return indentAmount % 3;
+};
+
+const convertToRomanTillDot = (
+  spanAry,
+  targetSpan,
+  listNumAry,
+  text,
+  isNumber,
+  isDot,
+  shouldBeUpper
+) => {
+  // ドットが来るまでspanAryに処理を追加
+  spanAry.push(targetSpan);
+  if (isNumber) listNumAry.push(text);
+  if (!isDot) return { shouldReturn: true };
+  // ドットだった時の処理
+  const listNumDec = Number(listNumAry.join(""));
+  const listNumRoman = convertToRoman(listNumDec, shouldBeUpper) + ".";
+  listNumAry.push(".");
+  return { listNumRoman, shouldReturn: false };
+};
+
+const cramSurplusRomanIntoLast = (listNumAry, listNumRoman, spanAry, index) => {
+  const isLast = listNumAry.length - 1 === index;
+  const textContent = isLast
+    ? listNumRoman.substr(index)
+    : listNumRoman.substr(index, 1);
+  createSpan(spanAry[index], textContent);
+};
+
+const alignRomanOnRightInSpan = (listNumAry, listNumRoman, spanAry, index) => {
+  const start = listNumAry.length - listNumRoman.length;
+  if (index < start) {
+    spanAry[index].textContent = null;
+  } else {
+    // index >= start
+    const textContent = listNumRoman.substr(index - start, 1);
+    createSpan(spanAry[index], textContent);
+  }
+};
+
+const createSpan = (targetSpan, textContent) => {
   const span = document.createElement("span");
   span.textContent = textContent;
   span.setAttribute("style", "color: #619FE0");
@@ -117,87 +161,62 @@ const createSpan = (textContent, targetSpan) => {
   targetSpan.appendChild(span);
 };
 
-const addColor = (target) => {
-  let isFirst = true;
-  let listStyleTypeIndex = 0;
-  let listNumStr = "";
-  const spanArray = [];
+const replaceDecimalToRoman = (spanAry, listNumRoman, listNumAry) => {
+  // ドット以前の数字たちが格納されたspanの配列をforEachで回す
+  spanAry.forEach((value, index) => {
+    if (listNumRoman.length > listNumAry.length) {
+      cramSurplusRomanIntoLast(listNumAry, listNumRoman, spanAry, index);
+    } else if (listNumRoman.length < listNumAry.length) {
+      alignRomanOnRightInSpan(listNumAry, listNumRoman, spanAry, index);
+    } else {
+      // listNumRoman.length === listNumAry.length
+      const textContent = listNumRoman.substr(index, 1);
+      createSpan(spanAry[index], textContent);
+    }
+  });
+};
 
-  $(target)
+const addColor = (targets) => {
+  let isFirst = true;
+  let orderListTypeIndex = 0;
+  const listNumAry = [];
+  const spanAry = [];
+
+  $(targets)
     .children()
     .each((i, targetSpan) => {
       const text = $(targetSpan).text();
       const isBlank = /^\s$/.test(text);
       if (isBlank) return false;
 
-      // orderListのタイプをここで判断
       if (isFirst) {
-        const className = targetSpan.className;
-        const indentAmount = className.substr(2, 1);
-        listStyleTypeIndex = indentAmount % 3;
+        orderListTypeIndex = getOrderListTypeIndex(targetSpan);
         isFirst = false;
       }
 
+      const isNumber = /^\d+$/.test(text);
+      const isDot = /^\.+$/.test(text);
+
       // 判断したタイプをもとに処理を振り分け
-      switch (listStyleTypeIndex) {
-        case 0: {
-          const isNumber = /^\d+$/.test(text);
-          const isDot = /^\.+$/.test(text);
-          if (isNumber || isDot) {
-            const span = document.createElement("span");
-            span.textContent = text;
-            span.setAttribute("style", "color: #619FE0");
-            targetSpan.textContent = null;
-            targetSpan.appendChild(span);
-          }
+      switch (orderListTypeIndex) {
+        case 0:
+          if (isNumber || isDot) createSpan(targetSpan, text);
           break;
-        }
         case 1:
-        case 2: {
-          // ドットが来るまでspanArrayに処理を追加
-          spanArray.push(targetSpan);
-          const isNumber = /^\d+$/.test(text);
-          if (isNumber) listNumStr += text;
-          const isDot = /^\.+$/.test(text);
-
-          if (!isDot) return true;
-
-          // ドットだった時の処理
-          const listNumDec = Number(listNumStr);
-          const listNumUpperRoman = convertToRoman(listNumDec, true) + ".";
-          listNumStr += ".";
-
-          // ドット以前の数字たちが格納されたspanの配列をforEachで回す
-          // 以前の数字を新しい数字(ローマ数字)で置き換えている
-          spanArray.forEach((value, index) => {
-            if (listNumUpperRoman.length > listNumStr.length) {
-              // ローマ数字の桁数が元の数字の桁数よりも大きい時
-              // 最後の置換位置に残りの超過したローマ数字をぶち込む
-              const isLast = listNumStr.length - 1 === index;
-              const textContent = isLast
-                ? listNumUpperRoman.substr(index)
-                : listNumUpperRoman.substr(index, 1);
-
-              createSpan(textContent, spanArray[index]);
-            } else if (listNumUpperRoman.length < listNumStr.length) {
-              // ローマ数字の桁数が元の数字の桁数よりも小さい時
-              const start = listNumStr.length - listNumUpperRoman.length;
-              if (index < start) {
-                spanArray[index].textContent = null;
-              } else {
-                // index >= start
-                const textContent = listNumUpperRoman.substr(index - start, 1);
-                createSpan(textContent, spanArray[index]);
-              }
-            } else {
-              // listNumUpperRoman.length === listNumStr.length
-              const textContent = listNumUpperRoman.substr(index, 1);
-              createSpan(textContent, spanArray[index]);
-            }
-          });
-
+        case 2:
+          const shouldBeUpper = orderListTypeIndex === 1 ? true : false;
+          const { listNumRoman, shouldReturn } = convertToRomanTillDot(
+            spanAry,
+            targetSpan,
+            listNumAry,
+            text,
+            isNumber,
+            isDot,
+            shouldBeUpper
+          );
+          if (shouldReturn) return true;
+          replaceDecimalToRoman(spanAry, listNumRoman, listNumAry);
           return false;
-        }
       }
     });
 };
