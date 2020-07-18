@@ -4,6 +4,8 @@ scrapbox.PopupMenu.addButton({
   onClick: (text) => `[[${text}]]`,
 });
 
+const color = "color: #619FE0";
+
 const convertToRoman = (num, shouldBeUpper) => {
   const decimal = [
     1000,
@@ -69,7 +71,7 @@ const convertToRoman = (num, shouldBeUpper) => {
   const romanNumeral = shouldBeUpper ? upperRomanNumeral : lowerRomanNumeral;
   let romanized = "";
 
-  for (var i = 0; i < decimal.length; i++) {
+  for (let i = 0; i < decimal.length; i++) {
     while (decimal[i] <= num) {
       romanized += romanNumeral[i];
       num -= decimal[i];
@@ -78,20 +80,31 @@ const convertToRoman = (num, shouldBeUpper) => {
   return romanized;
 };
 
+const findDecimalList = (val) => {
+  const text = $(val).text();
+  // "1. hoge"  =>true
+  // "10. foo"  =>true
+  // "  1. bar" =>true
+  // などを取得する
+  const regexp = /^\s*\d+\.\s.*/g;
+  const isDecimalList = regexp.test(text);
+  return isDecimalList;
+};
+
 const findNumberList = (val) => {
   const text = $(val).text();
   // "1. hoge"
-  // "10. foo"
-  // "  1. bar"
+  // "Ⅷ. foo"
+  // "  CD. bar"
   // などを取得する
-  const regexp = /^\s*\d+\.\s.*/g;
-  const isNumber = regexp.test(text);
-  return isNumber;
+  const regexp = /^\s*([M(CM)D(CD)C(ⅩC)L(ⅩL)Ⅹ(Ⅸ)ⅧⅦⅥⅤⅣⅢⅡⅠ]+|[m(cm)d(cd)c(ⅹc)l(ⅹl)ⅹⅸⅷⅶⅵⅴⅳⅲⅱⅰ]+|\d+)\.\s.*/g;
+  const isNumberList = regexp.test(text);
+  return isNumberList;
 };
 
 const getTarget = (textVal) => {
   const $indentObj = $(textVal).find('span[class="indent"]');
-  const hasIndent = $indentObj.length;
+  const hasIndent = !!$indentObj.length;
   let targetVal = undefined;
 
   if (hasIndent) {
@@ -139,7 +152,7 @@ const convertToRomanTillDot = (
 const createColorSpan = (targetSpan, textContent) => {
   const span = document.createElement("span");
   span.textContent = textContent;
-  span.setAttribute("style", "color: #619FE0");
+  span.setAttribute("style", color);
   targetSpan.textContent = null;
   targetSpan.appendChild(span);
 };
@@ -231,21 +244,34 @@ const changeNumberListStyle = (targetSpans) => {
     });
 };
 
-const customizeNumberList = () => {
-  $('span[class="text"]').each((i, textVal) => {
-    const isNumberList = findNumberList(textVal);
+const customizeNumberList = (textVal) => {
+  const isDecimalList = findDecimalList(textVal);
+  if (isDecimalList) {
+    const target = getTarget(textVal);
+    changeNumberListStyle(target);
+  }
+};
 
-    if (isNumberList) {
-      const target = getTarget(textVal);
-      console.log(target);
-      changeNumberListStyle(target);
-    }
-  });
+const revertToNormalColor = (textVal) => {
+  // 色付き数字を持っているかどうか取得
+  const $colorSpan = $(textVal).find(`span[style="${color}"]`);
+  const hasColor = !!$colorSpan.length;
+
+  if (hasColor) {
+    const target = getTarget(textVal);
+    const isNumberList = findNumberList(textVal);
+    //if  文字列を取得して'1. 'や'ⅷ. 'などの型に当てはまらなければ
+    // 数字がローマ数字ならば整数に変換
+    // 変換した整数を一文字ずつspanタグに当てはめていく
+  }
 };
 
 const $appRoot = $("#app-container");
 $appRoot.on("keyup", (e) => {
-  customizeNumberList();
+  $('span[class="text"]').each((i, textVal) => {
+    customizeNumberList(textVal);
+    revertToNormalColor(textVal);
+  });
 });
 
 $(function () {
