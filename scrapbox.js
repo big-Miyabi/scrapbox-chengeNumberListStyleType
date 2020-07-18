@@ -108,10 +108,12 @@ const getTarget = (textVal) => {
   }
 };
 
-const getOrderListTypeIndex = (targetSpan) => {
+const getOrderListType = (targetSpan) => {
+  const orderListTypeAry = ["decimal", "upper-roman", "lower-roman"];
   const className = targetSpan.className;
   const indentAmount = className.substr(2, 1);
-  return indentAmount % 3;
+  const index = indentAmount % 3;
+  return orderListTypeAry[index];
 };
 
 const convertToRomanTillDot = (
@@ -180,35 +182,33 @@ const replaceDecimalToRoman = (spanAry, listNumRoman, listNumAry) => {
   });
 };
 
-const changeNumberListStyle = (targets) => {
+const changeNumberListStyle = (targetSpans) => {
   let isFirst = true;
-  let orderListTypeIndex = 0;
+  let orderListType = "decimal";
   const listNumAry = [];
   const spanAry = [];
 
-  $(targets)
+  $(targetSpans)
     .children()
     .each((i, targetSpan) => {
       const text = $(targetSpan).text();
       const isBlank = /^\s$/.test(text);
       if (isBlank) return false;
-
       if (isFirst) {
-        orderListTypeIndex = getOrderListTypeIndex(targetSpan);
+        orderListType = getOrderListType(targetSpan);
         isFirst = false;
       }
-
       const isNumber = /^\d+$/.test(text);
       const isDot = /^\.+$/.test(text);
 
       // 判断したタイプをもとに処理を振り分け
-      switch (orderListTypeIndex) {
-        case 0:
+      switch (orderListType) {
+        case "decimal":
           if (isNumber || isDot) createSpan(targetSpan, text);
           break;
-        case 1:
-        case 2:
-          const shouldBeUpper = orderListTypeIndex === 1 ? true : false;
+        case "upper-roman":
+        case "lower-roman":
+          const shouldBeUpper = orderListType === "upper-roman" ? true : false;
           const { listNumRoman, shouldReturn } = convertToRomanTillDot(
             spanAry,
             targetSpan,
