@@ -135,8 +135,8 @@ const convertToRomanTillDot = (
 };
 
 const cramSurplusRomanIntoLast = (listNumAry, listNumRoman, spanAry, index) => {
-  // 21をローマ数字にするとⅹⅹⅰになり、文字数が増える。この時に最後の要素に文字を詰め込む処理
-  // [1, 0, 0, 0, .] → [undefined, undefined, undefined, M, .]
+  // 223をローマ数字にするとccⅹⅹⅲになり、文字数が増える。この時に最後の要素に文字を詰め込む処理
+  // [2, 2, 3, .] → [c, c, ⅹ, ⅹⅲ.]
   const isLast = listNumAry.length - 1 === index;
   const textContent = isLast
     ? listNumRoman.substr(index)
