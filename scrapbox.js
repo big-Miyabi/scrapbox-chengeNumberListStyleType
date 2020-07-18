@@ -135,6 +135,8 @@ const convertToRomanTillDot = (
 };
 
 const cramSurplusRomanIntoLast = (listNumAry, listNumRoman, spanAry, index) => {
+  // 21をローマ数字にするとⅹⅹⅰになり、文字数が増える。この時に最後の要素に文字を詰め込む処理
+  // [1, 0, 0, 0, .] → [undefined, undefined, undefined, M, .]
   const isLast = listNumAry.length - 1 === index;
   const textContent = isLast
     ? listNumRoman.substr(index)
@@ -143,6 +145,8 @@ const cramSurplusRomanIntoLast = (listNumAry, listNumRoman, spanAry, index) => {
 };
 
 const alignRomanOnRightInSpan = (listNumAry, listNumRoman, spanAry, index) => {
+  // 1000をローマ数字にするとMになり、文字数が減る。この時に文字を右詰めにする処理
+  // [1, 0, 0, 0, .] → [undefined, undefined, undefined, M, .]
   const start = listNumAry.length - listNumRoman.length;
   if (index < start) {
     spanAry[index].textContent = null;
@@ -176,7 +180,7 @@ const replaceDecimalToRoman = (spanAry, listNumRoman, listNumAry) => {
   });
 };
 
-const addColor = (targets) => {
+const changeNumberListStyle = (targets) => {
   let isFirst = true;
   let orderListTypeIndex = 0;
   const listNumAry = [];
@@ -228,7 +232,7 @@ const customizeNumberList = () => {
     if (isNumberList) {
       const target = getTarget(textVal);
       console.log(target);
-      addColor(target);
+      changeNumberListStyle(target);
     }
   });
 };
