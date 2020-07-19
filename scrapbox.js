@@ -292,17 +292,9 @@ const getColorAry = (targetSpansParent, lastDotIndex, isNumberList) => {
       const text = $(targetSpan).text();
       StringIndex += text.length;
       console.log("StringIndex: " + StringIndex);
-      const regexp = /^([M(CM)D(CD)C(ⅩC)L(ⅩL)Ⅹ(Ⅸ)ⅧⅦⅥⅤⅣⅢⅡⅠ]*|[m(cm)d(cd)c(ⅹc)l(ⅹl)ⅹⅸⅷⅶⅵⅴⅳⅲⅱⅰ]*|\d*)\.$/;
-      const hasDot = regexp.test(text);
       const $colorSpan = $(targetSpan).find(`span[style="${color}"]`);
       const hasColor = !!$colorSpan.length;
-      if (hasColor) {
-        $colorSpan.each((i, v) => {
-          colorAry.push(v);
-        });
-      } else {
-        shouldRevert = true;
-      }
+      hasColor ? colorAry.push(targetSpan) : (shouldRevert = true);
       if (StringIndex === lastDotIndex) return false; // ≒ break
     });
   return { shouldRevert, colorAry };
@@ -312,26 +304,37 @@ const revertToNormalColor = (textVal) => {
   // 色付き数字を持っているかどうか取得
   const $colorSpan = $(textVal).find(`span[style="${color}"]`);
   const hasColor = !!$colorSpan.length;
+  if (!hasColor) return;
 
-  if (hasColor) {
-    const targetSpansParent = getTarget(textVal);
-    const isNumberList = findNumberList(textVal);
-    const regexp = /(?<=([M(CM)D(CD)C(ⅩC)L(ⅩL)Ⅹ(Ⅸ)ⅧⅦⅥⅤⅣⅢⅡⅠ]+|[m(cm)d(cd)c(ⅹc)l(ⅹl)ⅹⅸⅷⅶⅵⅴⅳⅲⅱⅰ]+|\d+))\.\s/g;
-    const lastDotIndex = searchForLastMatchIndex(textVal, regexp, 2);
-    console.log(lastDotIndex);
+  const targetSpansParent = getTarget(textVal);
+  const isNumberList = findNumberList(textVal);
+  const regexp = /(?<=([M(CM)D(CD)C(ⅩC)L(ⅩL)Ⅹ(Ⅸ)ⅧⅦⅥⅤⅣⅢⅡⅠ]+|[m(cm)d(cd)c(ⅹc)l(ⅹl)ⅹⅸⅷⅶⅵⅴⅳⅲⅱⅰ]+|\d+))\.\s/g;
+  const lastDotIndex = searchForLastMatchIndex(textVal, regexp, 2);
+  console.log(lastDotIndex);
 
-    const { shouldRevert, colorAry } = getColorAry(
-      targetSpansParent,
-      lastDotIndex,
-      isNumberList
-    );
-    console.log(shouldRevert);
-    if (shouldRevert) console.log(...colorAry);
-    // const { shouldRevert, listNumStr } = getShouldRevert(
-    //   targetSpansParent,
-    //   spanAry,
-    //   isNumberList
-    // );
+  const { shouldRevert, colorAry } = getColorAry(
+    targetSpansParent,
+    lastDotIndex,
+    isNumberList
+  );
+  if (shouldRevert) {
+    colorAry.some((span) => {
+      console.log(span);
+      const $colorSpan = $(span).find(`span[style="${color}"]`);
+      let defaultNum = "";
+
+      if (!$colorSpan.length) {
+        console.error(
+          'colorAry配列に"span[style="${color}"]"を持たないspanが存在しています。'
+        );
+        return true;
+      }
+
+      $colorSpan.each((i, colorSpan) => {
+        defaultNum = colorSpan.getAttribute("default");
+      });
+      span.textContent = defaultNum;
+    });
   }
 };
 
