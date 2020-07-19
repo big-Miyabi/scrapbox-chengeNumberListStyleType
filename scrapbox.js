@@ -91,17 +91,6 @@ const findDecimalList = (val) => {
   return isDecimalList;
 };
 
-const findNumberList = (val) => {
-  const text = $(val).text();
-  // "1. hoge"
-  // "Ⅷ. foo"
-  // "  CD. bar"
-  // などを取得する
-  const regexp = /^\s*([M(CM)D(CD)C(ⅩC)L(ⅩL)Ⅹ(Ⅸ)ⅧⅦⅥⅤⅣⅢⅡⅠ]+|[m(cm)d(cd)c(ⅹc)l(ⅹl)ⅹⅸⅷⅶⅵⅴⅳⅲⅱⅰ]+|\d+)\.\s.*/g;
-  const isNumberList = regexp.test(text);
-  return isNumberList;
-};
-
 const getTarget = (textVal) => {
   const $indentObj = $(textVal).find('span[class="indent"]');
   const hasIndent = !!$indentObj.length;
@@ -132,97 +121,110 @@ const getOrderListType = (targetSpan) => {
 const convertToRomanTillDot = (
   spanAry,
   targetSpan,
-  listNumAry,
+  listDecimalAry,
   text,
-  isNumber,
+  isDecimal,
   isDot,
   shouldBeUpper
 ) => {
   // ドットが来るまでspanAryに処理を追加
   spanAry.push(targetSpan);
-  if (isNumber) listNumAry.push(text);
+  if (isDecimal) listDecimalAry.push(text);
   if (!isDot) return { shouldReturn: true };
   // ドットだった時、整数をローマ数字に変換する
-  const listNumDec = Number(listNumAry.join(""));
+  const listNumDec = Number(listDecimalAry.join(""));
   const listNumRoman = convertToRoman(listNumDec, shouldBeUpper) + ".";
-  listNumAry.push(".");
+  listDecimalAry.push(".");
   return { listNumRoman, shouldReturn: false };
 };
 
-const createColorSpan = (targetSpan, textContent) => {
+const createColorSpan = (targetSpan, textContent, defaultNum) => {
   const span = document.createElement("span");
   span.textContent = textContent;
   span.setAttribute("style", color);
+  if (!!defaultNum) {
+    span.setAttribute("default", defaultNum);
+  }
   targetSpan.textContent = null;
   targetSpan.appendChild(span);
 };
 
-const cramSurplusRomanIntoLast = (listNumAry, listNumRoman, spanAry, index) => {
+const cramSurplusRomanIntoLast = (
+  listDecimalAry,
+  listNumRoman,
+  spanAry,
+  index
+) => {
   // 223をローマ数字にするとccⅹⅹⅲになり、文字数が増える。この時に最後の要素に文字を詰め込む処理
   // [2, 2, 3, .] → [c, c, ⅹ, ⅹⅲ.]
-  const isLast = listNumAry.length - 1 === index;
+  const isLast = listDecimalAry.length - 1 === index;
   const textContent = isLast
     ? listNumRoman.substr(index)
     : listNumRoman.substr(index, 1);
-  createColorSpan(spanAry[index], textContent);
+  createColorSpan(spanAry[index], textContent, listDecimalAry[index]);
 };
 
-const alignRomanOnRightInSpan = (listNumAry, listNumRoman, spanAry, index) => {
+const alignRomanOnRightInSpan = (
+  listDecimalAry,
+  listNumRoman,
+  spanAry,
+  index
+) => {
   // 1000をローマ数字にするとMになり、文字数が減る。この時に文字を右詰めにする処理
   // [1, 0, 0, 0, .] → [undefined, undefined, undefined, M, .]
-  const start = listNumAry.length - listNumRoman.length;
+  const start = listDecimalAry.length - listNumRoman.length;
   if (index < start) {
-    spanAry[index].textContent = null;
+    createColorSpan(spanAry[index], null, listDecimalAry[index]);
   } else {
     // index >= start
     const textContent = listNumRoman.substr(index - start, 1);
-    createColorSpan(spanAry[index], textContent);
+    createColorSpan(spanAry[index], textContent, listDecimalAry[index]);
   }
 };
 
-const replaceDecimalToRoman = (spanAry, listNumRoman, listNumAry) => {
+const replaceDecimalToRoman = (spanAry, listNumRoman, listDecimalAry) => {
   // ドット以前の数字たちが格納されたspanの配列をforEachで回す
   spanAry.forEach((value, index) => {
-    if (listNumRoman.length > listNumAry.length) {
+    if (listNumRoman.length > listDecimalAry.length) {
       // [2, 2, 3, .] → [c, c, ⅹ, ⅹⅲ.]
-      cramSurplusRomanIntoLast(listNumAry, listNumRoman, spanAry, index);
-    } else if (listNumRoman.length < listNumAry.length) {
+      cramSurplusRomanIntoLast(listDecimalAry, listNumRoman, spanAry, index);
+    } else if (listNumRoman.length < listDecimalAry.length) {
       // [1, 0, 0, 0, .] → [undefined, undefined, undefined, M, .]
-      alignRomanOnRightInSpan(listNumAry, listNumRoman, spanAry, index);
+      alignRomanOnRightInSpan(listDecimalAry, listNumRoman, spanAry, index);
     } else {
-      // listNumRoman.length === listNumAry.length
+      // listNumRoman.length === listDecimalAry.length
       const textContent = listNumRoman.substr(index, 1);
-      createColorSpan(spanAry[index], textContent);
+      createColorSpan(spanAry[index], textContent, listDecimalAry[index]);
     }
   });
 };
 
-const changeNumberListStyle = (targetSpans) => {
+const changeNumberListStyle = (targetSpansParent) => {
   let isFirst = true;
   let orderListType = "decimal";
-  const listNumAry = [];
+  const listDecimalAry = [];
   const spanAry = [];
 
   // scrapboxでは一文字ずつspanタグに入れられている
   // spanごとに(一文字ごとに)処理を実行していく
-  $(targetSpans)
+  $(targetSpansParent)
     .children()
     .each((i, targetSpan) => {
       const text = $(targetSpan).text();
       const isBlank = /^\s$/.test(text);
-      if (isBlank) return false;
+      if (isBlank) return false; // ≒ break;
       if (isFirst) {
         // インデントの数に応じて変換する数字のタイプを判断する
         orderListType = getOrderListType(targetSpan);
         isFirst = false;
       }
-      const isNumber = /^\d+$/.test(text);
+      const isDecimal = /^\d+$/.test(text);
       const isDot = /^\.+$/.test(text);
 
       switch (orderListType) {
         case "decimal":
           // typeが整数の時は変換の必要がないので、そのまま色を付ける
-          if (isNumber || isDot) createColorSpan(targetSpan, text);
+          if (isDecimal || isDot) createColorSpan(targetSpan, text, text);
           break;
         case "upper-roman":
         case "lower-roman":
@@ -231,15 +233,15 @@ const changeNumberListStyle = (targetSpans) => {
           const { listNumRoman, shouldReturn } = convertToRomanTillDot(
             spanAry,
             targetSpan,
-            listNumAry,
+            listDecimalAry,
             text,
-            isNumber,
+            isDecimal,
             isDot,
             shouldBeUpper
           );
-          if (shouldReturn) return true;
-          replaceDecimalToRoman(spanAry, listNumRoman, listNumAry);
-          return false;
+          if (shouldReturn) return true; // ≒ continue;
+          replaceDecimalToRoman(spanAry, listNumRoman, listDecimalAry);
+          return false; // ≒ break;
       }
     });
 };
@@ -247,9 +249,63 @@ const changeNumberListStyle = (targetSpans) => {
 const customizeNumberList = (textVal) => {
   const isDecimalList = findDecimalList(textVal);
   if (isDecimalList) {
-    const target = getTarget(textVal);
-    changeNumberListStyle(target);
+    const targetSpansParent = getTarget(textVal);
+    changeNumberListStyle(targetSpansParent);
   }
+};
+
+const findNumberList = (val) => {
+  const text = $(val).text();
+  // "1. hoge"
+  // "Ⅷ. foo"
+  // "  CD. bar"
+  // などを取得する
+  const regexp = /^\s*([M(CM)D(CD)C(ⅩC)L(ⅩL)Ⅹ(Ⅸ)ⅧⅦⅥⅤⅣⅢⅡⅠ]+|[m(cm)d(cd)c(ⅹc)l(ⅹl)ⅹⅸⅷⅶⅵⅴⅳⅲⅱⅰ]+|\d+)\.\s.*/g;
+  const isNumberList = regexp.test(text);
+  return isNumberList;
+};
+
+const searchForLastMatchIndex = (str, regexp, length) => {
+  let text = $(str).text().replace(/^\s*/, ""); // 最初のインデントを削除
+  let indexOfDotBlank = -1;
+  while (true) {
+    const followingIndex = text.search(regexp);
+    if (followingIndex === -1) break;
+    indexOfDotBlank = followingIndex;
+    const textDeleted = text.slice(followingIndex + length);
+    text = "s".repeat(followingIndex + length) + textDeleted;
+  }
+  return indexOfDotBlank;
+};
+
+const getColorAry = (targetSpansParent, lastDotIndex, isNumberList) => {
+  //if 文字列を取得して'1. 'や'ⅷ. 'などの型に当てはまらなければ
+  //if (!isNumberList)
+  //   || ローマ数字にも関わらず色がドット以下の数字の一部に黒が混ざっていれば
+  let shouldRevert = !isNumberList;
+  let StringIndex = -1;
+  const colorAry = [];
+  $(targetSpansParent)
+    .children()
+    .each((index, targetSpan) => {
+      // ドットが来るまで色付きSpanがあればcolorAryに処理を追加
+      const text = $(targetSpan).text();
+      StringIndex += text.length;
+      console.log("StringIndex: " + StringIndex);
+      const regexp = /^([M(CM)D(CD)C(ⅩC)L(ⅩL)Ⅹ(Ⅸ)ⅧⅦⅥⅤⅣⅢⅡⅠ]*|[m(cm)d(cd)c(ⅹc)l(ⅹl)ⅹⅸⅷⅶⅵⅴⅳⅲⅱⅰ]*|\d*)\.$/;
+      const hasDot = regexp.test(text);
+      const $colorSpan = $(targetSpan).find(`span[style="${color}"]`);
+      const hasColor = !!$colorSpan.length;
+      if (hasColor) {
+        $colorSpan.each((i, v) => {
+          colorAry.push(v);
+        });
+      } else {
+        shouldRevert = true;
+      }
+      if (StringIndex === lastDotIndex) return false; // ≒ break
+    });
+  return { shouldRevert, colorAry };
 };
 
 const revertToNormalColor = (textVal) => {
@@ -258,19 +314,32 @@ const revertToNormalColor = (textVal) => {
   const hasColor = !!$colorSpan.length;
 
   if (hasColor) {
-    const target = getTarget(textVal);
+    const targetSpansParent = getTarget(textVal);
     const isNumberList = findNumberList(textVal);
-    //if  文字列を取得して'1. 'や'ⅷ. 'などの型に当てはまらなければ
-    // 数字がローマ数字ならば整数に変換
-    // 変換した整数を一文字ずつspanタグに当てはめていく
+    const regexp = /(?<=([M(CM)D(CD)C(ⅩC)L(ⅩL)Ⅹ(Ⅸ)ⅧⅦⅥⅤⅣⅢⅡⅠ]+|[m(cm)d(cd)c(ⅹc)l(ⅹl)ⅹⅸⅷⅶⅵⅴⅳⅲⅱⅰ]+|\d+))\.\s/g;
+    const lastDotIndex = searchForLastMatchIndex(textVal, regexp, 2);
+    console.log(lastDotIndex);
+
+    const { shouldRevert, colorAry } = getColorAry(
+      targetSpansParent,
+      lastDotIndex,
+      isNumberList
+    );
+    console.log(shouldRevert);
+    if (shouldRevert) console.log(...colorAry);
+    // const { shouldRevert, listNumStr } = getShouldRevert(
+    //   targetSpansParent,
+    //   spanAry,
+    //   isNumberList
+    // );
   }
 };
 
 const $appRoot = $("#app-container");
 $appRoot.on("keyup", (e) => {
   $('span[class="text"]').each((i, textVal) => {
-    customizeNumberList(textVal);
     revertToNormalColor(textVal);
+    customizeNumberList(textVal);
   });
 });
 
