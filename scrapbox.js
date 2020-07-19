@@ -270,82 +270,88 @@ const searchForLastMatchIndex = (str, regexp, length) => {
   let indexOfDotBlank = -1;
   while (true) {
     const followingIndex = text.search(regexp);
-    if (followingIndex === -1) break;
+    if (followingIndex === -1) break; // 一致する位置がなければreturn
     indexOfDotBlank = followingIndex;
-    const textDeleted = text.slice(followingIndex + length);
-    text = "s".repeat(followingIndex + length) + textDeleted;
+    // 一致した箇所までを削除
+    const deletedText = text.slice(followingIndex + length);
+    // 削除した部分に"s"を挿入
+    text = "s".repeat(followingIndex + length) + deletedText;
   }
   return indexOfDotBlank;
 };
 
 const getColorAry = (targetSpansParent, lastDotIndex, isNumberList) => {
-  //if 文字列を取得して'1. 'や'ⅷ. 'などの型に当てはまらなければ
-  //if (!isNumberList)
-  //   || ローマ数字にも関わらず色がドット以下の数字の一部に黒が混ざっていれば
+  // 文字列が'1. 'や'ⅷ. 'などの型に当てはまらなければ色を元に戻すべきと判断
   let shouldRevert = !isNumberList;
   let StringIndex = -1;
   const colorAry = [];
   $(targetSpansParent)
     .children()
     .each((index, targetSpan) => {
-      // ドットが来るまで色付きSpanがあればcolorAryに処理を追加
+      // 最後にマッチしているドットが来るまで色付きSpanがあればcolorAryに追加
       const text = $(targetSpan).text();
       StringIndex += text.length;
-      console.log("StringIndex: " + StringIndex);
       const $colorSpan = $(targetSpan).find(`span[style="${color}"]`);
       const hasColor = !!$colorSpan.length;
+      // ドットが来る前に色のないspanタグが来た場合、色を元に戻すべきと判断
       hasColor ? colorAry.push(targetSpan) : (shouldRevert = true);
       if (StringIndex === lastDotIndex) return false; // ≒ break
     });
   return { shouldRevert, colorAry };
 };
 
-const revertToNormalColor = (textVal) => {
-  // 色付き数字を持っているかどうか取得
-  const $colorSpan = $(textVal).find(`span[style="${color}"]`);
-  const hasColor = !!$colorSpan.length;
-  if (!hasColor) return;
-
+const judgeShouldRevert = (textVal) => {
   const targetSpansParent = getTarget(textVal);
   const isNumberList = findNumberList(textVal);
   const regexp = /(?<=([M(CM)D(CD)C(ⅩC)L(ⅩL)Ⅹ(Ⅸ)ⅧⅦⅥⅤⅣⅢⅡⅠ]+|[m(cm)d(cd)c(ⅹc)l(ⅹl)ⅹⅸⅷⅶⅵⅴⅳⅲⅱⅰ]+|\d+))\.\s/g;
   const lastDotIndex = searchForLastMatchIndex(textVal, regexp, 2);
-  console.log(lastDotIndex);
-
   const { shouldRevert, colorAry } = getColorAry(
     targetSpansParent,
     lastDotIndex,
     isNumberList
   );
-  if (shouldRevert) {
-    colorAry.some((span) => {
-      console.log(span);
-      const $colorSpan = $(span).find(`span[style="${color}"]`);
-      let defaultNum = "";
+  return { shouldRevert, colorAry };
+};
 
-      if (!$colorSpan.length) {
-        console.error(
-          'colorAry配列に"span[style="${color}"]"を持たないspanが存在しています。'
-        );
-        return true;
-      }
-
-      $colorSpan.each((i, colorSpan) => {
-        defaultNum = colorSpan.getAttribute("default");
-      });
-      span.textContent = defaultNum;
+const revertToNormalColorAndNumber = (colorAry) => {
+  colorAry.some((span) => {
+    const $colorSpan = $(span).find(`span[style="${color}"]`);
+    let defaultNum = "";
+    // エラー処理
+    if (!$colorSpan.length) {
+      console.error(
+        'colorAry配列に"span[style="${color}"]"を持たないspanが存在しています。'
+      );
+      return true;
+    }
+    // 色と数字を元に戻す
+    $colorSpan.each((i, colorSpan) => {
+      defaultNum = colorSpan.getAttribute("default");
     });
-  }
+    span.textContent = defaultNum;
+  });
+};
+
+const modifyNumberList = (textVal) => {
+  // 色付きspanタグを持っているかどうか取得
+  const $colorSpan = $(textVal).find(`span[style="${color}"]`);
+  const hasColor = !!$colorSpan.length;
+  if (!hasColor) return;
+  // 色付きspanタグが存在する場合の処理
+  const { shouldRevert, colorAry } = judgeShouldRevert(textVal);
+  if (shouldRevert) revertToNormalColorAndNumber(colorAry);
 };
 
 const $appRoot = $("#app-container");
 $appRoot.on("keyup", (e) => {
   $('span[class="text"]').each((i, textVal) => {
-    revertToNormalColor(textVal);
+    modifyNumberList(textVal);
     customizeNumberList(textVal);
   });
 });
 
 $(function () {
-  console.log("ロードしたよ！");
+  $('span[class="text"]').each((i, textVal) => {
+    customizeNumberList(textVal);
+  });
 });
