@@ -4,7 +4,8 @@ scrapbox.PopupMenu.addButton({
   onClick: (text) => `[[${text}]]`,
 });
 
-const color = "color: #619FE0";
+const numberListStyle = "color: #619FE0;";
+const firstNumberListStyle = "margin-left: 0.4em; " + numberListStyle;
 
 const convertToRoman = (num, shouldBeUpper) => {
   const decimal = [
@@ -138,10 +139,11 @@ const convertToRomanTillDot = (
   return { listNumRoman, shouldReturn: false };
 };
 
-const createColorSpan = (targetSpan, textContent, defaultNum) => {
+const createColorSpan = (targetSpan, textContent, defaultNum, index) => {
   const span = document.createElement("span");
+  const style = index === 0 ? firstNumberListStyle : numberListStyle;
   span.textContent = textContent;
-  span.setAttribute("style", color);
+  span.setAttribute("style", style);
   if (!!defaultNum) {
     span.setAttribute("default", defaultNum);
   }
@@ -161,7 +163,7 @@ const cramSurplusRomanIntoLast = (
   const textContent = isLast
     ? listNumRoman.substr(index)
     : listNumRoman.substr(index, 1);
-  createColorSpan(spanAry[index], textContent, listDecimalAry[index]);
+  createColorSpan(spanAry[index], textContent, listDecimalAry[index], index);
 };
 
 const alignRomanOnRightInSpan = (
@@ -174,11 +176,11 @@ const alignRomanOnRightInSpan = (
   // [1, 0, 0, 0, .] → [undefined, undefined, undefined, M, .]
   const start = listDecimalAry.length - listNumRoman.length;
   if (index < start) {
-    createColorSpan(spanAry[index], null, listDecimalAry[index]);
+    createColorSpan(spanAry[index], null, listDecimalAry[index], index);
   } else {
     // index >= start
     const textContent = listNumRoman.substr(index - start, 1);
-    createColorSpan(spanAry[index], textContent, listDecimalAry[index]);
+    createColorSpan(spanAry[index], textContent, listDecimalAry[index], index);
   }
 };
 
@@ -194,7 +196,12 @@ const replaceDecimalToRoman = (spanAry, listNumRoman, listDecimalAry) => {
     } else {
       // listNumRoman.length === listDecimalAry.length
       const textContent = listNumRoman.substr(index, 1);
-      createColorSpan(spanAry[index], textContent, listDecimalAry[index]);
+      createColorSpan(
+        spanAry[index],
+        textContent,
+        listDecimalAry[index],
+        index
+      );
     }
   });
 };
@@ -209,7 +216,7 @@ const changeNumberListStyle = (targetSpansParent) => {
   // spanごとに(一文字ごとに)処理を実行していく
   $(targetSpansParent)
     .children()
-    .each((i, targetSpan) => {
+    .each((index, targetSpan) => {
       const text = $(targetSpan).text();
       const isBlank = /^\s$/.test(text);
       if (isBlank) return false; // ≒ break;
@@ -224,7 +231,8 @@ const changeNumberListStyle = (targetSpansParent) => {
       switch (orderListType) {
         case "decimal":
           // typeが整数の時は変換の必要がないので、そのまま色を付ける
-          if (isDecimal || isDot) createColorSpan(targetSpan, text, text);
+          if (isDecimal || isDot)
+            createColorSpan(targetSpan, text, text, index);
           break;
         case "upper-roman":
         case "lower-roman":
@@ -291,7 +299,7 @@ const getColorAry = (targetSpansParent, lastDotIndex, isNumberList) => {
       // 最後にマッチしているドットが来るまで色付きSpanがあればcolorAryに追加
       const text = $(targetSpan).text();
       StringIndex += text.length;
-      const $colorSpan = $(targetSpan).find(`span[style="${color}"]`);
+      const $colorSpan = $(targetSpan).find(`span[style="${numberListStyle}"]`);
       const hasColor = !!$colorSpan.length;
       // ドットが来る前に色のないspanタグが来た場合、色を元に戻すべきと判断
       hasColor ? colorAry.push(targetSpan) : (shouldRevert = true);
@@ -315,12 +323,12 @@ const judgeShouldRevert = (textVal) => {
 
 const revertToNormalColorAndNumber = (colorAry) => {
   colorAry.some((span) => {
-    const $colorSpan = $(span).find(`span[style="${color}"]`);
+    const $colorSpan = $(span).find(`span[style="${numberListStyle}"]`);
     let defaultNum = "";
     // エラー処理
     if (!$colorSpan.length) {
       console.error(
-        'colorAry配列に"span[style="${color}"]"を持たないspanが存在しています。'
+        'colorAry配列に"span[style="${numberListStyle}"]"を持たないspanが存在しています。'
       );
       return true;
     }
@@ -334,7 +342,7 @@ const revertToNormalColorAndNumber = (colorAry) => {
 
 const modifyNumberList = (textVal) => {
   // 色付きspanタグを持っているかどうか取得
-  const $colorSpan = $(textVal).find(`span[style="${color}"]`);
+  const $colorSpan = $(textVal).find(`span[style="${numberListStyle}"]`);
   const hasColor = !!$colorSpan.length;
   if (!hasColor) return;
   // 色付きspanタグが存在する場合の処理
