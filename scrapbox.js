@@ -299,7 +299,8 @@ const getColorAry = (targetSpansParent, lastDotIndex, isNumberList) => {
       // 最後にマッチしているドットが来るまで色付きSpanがあればcolorAryに追加
       const text = $(targetSpan).text();
       StringIndex += text.length;
-      const $colorSpan = $(targetSpan).find(`span[style="${numberListStyle}"]`);
+      const style = index === 0 ? firstNumberListStyle : numberListStyle;
+      const $colorSpan = $(targetSpan).find(`span[style="${style}"]`);
       const hasColor = !!$colorSpan.length;
       // ドットが来る前に色のないspanタグが来た場合、色を元に戻すべきと判断
       hasColor ? colorAry.push(targetSpan) : (shouldRevert = true);
@@ -321,14 +322,29 @@ const judgeShouldRevert = (textVal) => {
   return { shouldRevert, colorAry };
 };
 
+const getJqueryColorSpan = (parentElm) => {
+  const $generalColorSpan = $(parentElm).find(
+    `span[style="${numberListStyle}"]`
+  );
+  if (!!$generalColorSpan.length) {
+    return $generalColorSpan;
+  } else {
+    const $firstColorSpan = $(parentElm).find(
+      `span[style="${firstNumberListStyle}"]`
+    );
+    return $firstColorSpan;
+  }
+};
+
 const revertToNormalColorAndNumber = (colorAry) => {
   colorAry.some((span) => {
-    const $colorSpan = $(span).find(`span[style="${numberListStyle}"]`);
+    const $colorSpan = getJqueryColorSpan(span);
+
     let defaultNum = "";
     // エラー処理
     if (!$colorSpan.length) {
       console.error(
-        'colorAry配列に"span[style="${numberListStyle}"]"を持たないspanが存在しています。'
+        "colorAry配列に、style属性内にcolorプロパティを持たないspanが存在しています。"
       );
       return true;
     }
@@ -342,7 +358,7 @@ const revertToNormalColorAndNumber = (colorAry) => {
 
 const modifyNumberList = (textVal) => {
   // 色付きspanタグを持っているかどうか取得
-  const $colorSpan = $(textVal).find(`span[style="${numberListStyle}"]`);
+  const $colorSpan = getJqueryColorSpan(textVal);
   const hasColor = !!$colorSpan.length;
   if (!hasColor) return;
   // 色付きspanタグが存在する場合の処理
