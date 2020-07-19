@@ -1,9 +1,3 @@
-// 選択した文字列にマーカー
-scrapbox.PopupMenu.addButton({
-  title: "マーカー",
-  onClick: (text) => `[[${text}]]`,
-});
-
 const numberListStyle = "color: #619FE0;";
 const firstNumberListStyle = "margin-left: 0.4em; " + numberListStyle;
 
