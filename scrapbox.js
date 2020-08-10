@@ -4,6 +4,19 @@ scrapbox.PopupMenu.addButton({
   onClick: (text) => `[[${text}]]`,
 });
 
+// strong.level-2、strong.level-3~level-10のクラスを持つ親要素のspan.textにクラスを追加
+const addLevelTextClass = () => {
+  $("span.text:has(strong.level-2)").addClass("level2-text");
+  $("span.text:has(strong.level-3)").addClass("level-text");
+  $("span.text:has(strong.level-4)").addClass("level-text");
+  $("span.text:has(strong.level-5)").addClass("level-text");
+  $("span.text:has(strong.level-6)").addClass("level-text");
+  $("span.text:has(strong.level-7)").addClass("level-text");
+  $("span.text:has(strong.level-8)").addClass("level-text");
+  $("span.text:has(strong.level-9)").addClass("level-text");
+  $("span.text:has(strong.level-10)").addClass("level-text");
+};
+
 const numberListStyle = "color: #619FE0;";
 const firstNumberListStyle = "margin-left: 0.4em; " + numberListStyle;
 
@@ -368,6 +381,7 @@ const modifyNumberList = (textVal) => {
 
 const $appRoot = $("#app-container");
 $appRoot.on("keyup", (e) => {
+  addLevelTextClass();
   $('span[class="text"]').each((i, textVal) => {
     modifyNumberList(textVal);
     customizeNumberList(textVal);
@@ -375,6 +389,7 @@ $appRoot.on("keyup", (e) => {
 });
 
 $(function () {
+  addLevelTextClass();
   $('span[class="text"]').each((i, textVal) => {
     customizeNumberList(textVal);
   });
