@@ -4,17 +4,17 @@ scrapbox.PopupMenu.addButton({
   onClick: (text) => `[[${text}]]`,
 });
 
-// strong.level-2、strong.level-3~level-10のクラスを持つ親要素のspan.textにクラスを追加
+// strong.level-2、strong.level-3~level-10のクラスを持つ親要素のlineにクラスを追加
 const addLevelTextClass = () => {
-  $("span.text:has(strong.level-2)").addClass("level2-text");
-  $("span.text:has(strong.level-3)").addClass("level-text");
-  $("span.text:has(strong.level-4)").addClass("level-text");
-  $("span.text:has(strong.level-5)").addClass("level-text");
-  $("span.text:has(strong.level-6)").addClass("level-text");
-  $("span.text:has(strong.level-7)").addClass("level-text");
-  $("span.text:has(strong.level-8)").addClass("level-text");
-  $("span.text:has(strong.level-9)").addClass("level-text");
-  $("span.text:has(strong.level-10)").addClass("level-text");
+  $("div.line:has(strong.level-2) div.telomere").addClass("level2-div");
+  $("div.line:has(strong.level-3) div.telomere").addClass("level3-div");
+  $("div.line:has(strong.level-4) div.telomere").addClass("level4-div");
+  $("div.line:has(strong.level-5) div.telomere").addClass("level5-div");
+  $("div.line:has(strong.level-6) div.telomere").addClass("level6-div");
+  $("div.line:has(strong.level-7) div.telomere").addClass("level7-div");
+  $("div.line:has(strong.level-8) div.telomere").addClass("level8-div");
+  $("div.line:has(strong.level-9) div.telomere").addClass("level9-div");
+  $("div.line:has(strong.level-10) div.telomere").addClass("level10-div");
 };
 
 const numberListStyle = "color: #619FE0;";
